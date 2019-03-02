@@ -66,7 +66,6 @@ while len(survivors) < int(S * P) or len(survivors) % 2 != 0:
         survivors.append(potential_survivor[0])
 
 # Cross-over:
-
 half_survivors = len(survivors) // 2
 first_half = survivors[:half_survivors]
 second_half = survivors[half_survivors:]
@@ -80,5 +79,8 @@ for pair in paired_survivors:
     offspring.append(offspring2)
 
 # Repair offspring:
+for individual in offspring:
+    while np.count_nonzero(individual) > N:
+        ranom_one_index = random.choice(np.nonzero(individual.reshape(N*N)))
 
 import pdb;pdb.set_trace()
