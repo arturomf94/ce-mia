@@ -1,14 +1,41 @@
 #### Evolutionary Algorithm to Solve an N-Queens Problem
 import numpy as np
 import random
+import math
 
-# Global parameters:
-runs = 30
-generations = 1000
+### Permutation Solution
+
+## Parameters:
+P = 100 # Population size
+N = 8 # Number of queens
+pr_b = 1 # Breeding probability
+pr_m = .8 # Mutation probability
+
+def run_one_generation_permutation(population):
+
+def run_permutation_evolution():
+    ## Create initial population
+    # Random 0-7 arrays of size 1xN
+    array_seed = np.arange(N)
+    population = []
+    for i in range(P):
+        np.random.shuffle(array_seed)
+        individual = np.copy(array_seed)
+        population.append(individual)
+
+    for gen in range(generations):
+        total_population_data = run_one_generation_matrix(population)
+        best_configuration = total_population_data[0][0]
+        conflicts = total_population_data[0][1]
+        if conflicts == 0:
+            break
+    return gen, best_configuration, conflicts
 
 ### Matrix Solution
 
 ## Parameters:
+runs = 30
+generations = 1000
 P = 30 # Population size
 N = 8 # Number of queens
 S = .4 # Proportion of population that is selected each generation
@@ -32,10 +59,10 @@ def evaluate(individual):
     return conflicts // 2
 
 def breed(individual1, individual2):
-    individual1 = individual1.reshape(N * N)
-    individual2 = individual2.reshape(N * N)
-    halfway = (N * N) // 2
     if np.random.uniform() < pr_b:
+        individual1 = individual1.reshape(N * N)
+        individual2 = individual2.reshape(N * N)
+        halfway = (N * N) // 2
         offspring1 = np.concatenate([individual1[:halfway], individual2[halfway:]])
         offspring2 = np.concatenate([individual2[:halfway], individual1[halfway:]])
         offspring1 = offspring1.reshape((N,N))
@@ -54,11 +81,16 @@ def run_one_generation_matrix(population):
     for individual in population:
         conflicts.append(evaluate(individual))
 
+    # Order by value:
+    evaluated_population = list(zip(population, conflicts))
+    evaluated_population.sort(key = sort_attacks)
+    population = list(list(zip(*evaluated_population))[0])
+    conflicts = list(list(zip(*evaluated_population))[1])
     # Assign probabilities of surival:
     fitness = []
     total_conflicts = sum(conflicts)
-    for conflict in conflicts:
-        fitness.append((1 - conflict / total_conflicts) / (P - 1))
+    for i in range(len(conflicts)):
+        fitness.append((1 - sum(conflicts[:i]) / total_conflicts))
 
 
     # Select surviving population:
@@ -79,8 +111,11 @@ def run_one_generation_matrix(population):
 
     for pair in paired_survivors:
         offspring1, offspring2 = breed(pair[0], pair[1])
-        offspring.append(offspring1)
-        offspring.append(offspring2)
+        if np.array_equal(pair[0],pair[1])\
+         or np.array_equal(offspring1, pair[0])\
+          or np.array_equal(offspring2, pair[1]):
+            offspring.append(offspring1)
+            offspring.append(offspring2)
 
     # Repair offspring:
     for individual in offspring:
@@ -89,7 +124,7 @@ def run_one_generation_matrix(population):
             if np.count_nonzero(reshaped_individual) > N:
                 random_one_index = random.choice(np.nonzero(reshaped_individual)[0])
                 reshaped_individual[random_one_index] = 0
-            if np.count_nonzero(reshaped_individual) < N:
+            else:
                 random_zero_index = random.choice(np.where(reshaped_individual == 0)[0])
                 reshaped_individual[random_zero_index] = 1
         individual = reshaped_individual.reshape((N, N))
@@ -105,27 +140,22 @@ def run_one_generation_matrix(population):
             individual = reshaped_individual.reshape((N, N))
 
     # Replace:
-    # Sort original population by number of attacks and replace bottom
-    # population by new offspring.
+    # Join offspring, evaluate and remove the worst performing individuals
 
-    total_population_data.sort(key = sort_attacks)
-    new_population = list(list(zip(*total_population_data))[0])
-    number_of_offspring = len(offspring)
-    new_population = new_population[:(P - number_of_offspring)]
-    new_population = new_population + offspring
-
-    population = new_population
-
-    # Report final evaluation:
+    all_population = population + offspring
     conflicts = []
-    for individual in population:
+    for individual in all_population:
         conflicts.append(evaluate(individual))
-    fitness = []
-    total_conflicts = sum(conflicts)
-    for conflict in conflicts:
-        fitness.append((1 - conflict / total_conflicts) / (P - 1))
-    total_population_data = list(zip(population, conflicts, fitness))
-    total_population_data.sort(key = sort_attacks)
+    evaluated_population = list(zip(all_population, conflicts))
+    evaluated_population.sort(key = sort_attacks)
+    population = list(list(zip(*evaluated_population))[0])
+    conflicts = list(list(zip(*evaluated_population))[1])
+
+    population = population[:P]
+    conflicts = conflicts[:P]
+
+    # Report final results:
+    total_population_data = list(zip(population, conflicts))
 
     return total_population_data
 
