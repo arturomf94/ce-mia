@@ -2,16 +2,99 @@
 import numpy as np
 import random
 import math
+from collections import Counter
 
 ### Permutation Solution
 
 ## Parameters:
+runs = 30
+generations = 10000
 P = 100 # Population size
 N = 8 # Number of queens
+S = 5 # Number of randomly selected ind. for selection.
 pr_b = 1 # Breeding probability
 pr_m = .8 # Mutation probability
 
+## Auxiliary functions:
+
+def convert(individual):
+    matrix = np.array([0] * N * N)
+    matrix.reshape((N, N))
+    for i in range(len(individual)):
+        matrix[i][individual[i]] = 1
+    return matrix
+
+def evaluate(individual):
+    conflicts = 0
+    for i in range(N):
+        for j in range(N):
+            if individual[i][j] == 1:
+                for p in range(N):
+                    for q in range(N):
+                        if (i != p or j != q) \
+                            and ((i + q == p + j) \
+                                or (i + j == p + q) \
+                                or (i == p) or (j == q)):
+                            if individual[p][q] == 1:
+                                conflicts += 1
+    return conflicts // 2
+
+    def sort_attacks(val):
+        return val[1]
+
 def run_one_generation_permutation(population):
+    # Evaluate
+    conflicts = []
+    for individual in population:
+        matrix = convert(individual)
+        conflicts.append(evaluate(matrix))
+
+    # Order by value:
+    evaluated_population = list(zip(population, conflicts))
+
+    # Select S random:
+    random_selection = []
+    while len(random_selection) < S
+        random_selection.append(random.choice(evaluated_population))
+
+    # Sort and get best two:
+    random_selection.sort(key = sort_attacks)
+    father = random_selection[0][0]
+    mother = random_selection[1][0]
+
+    halfway = N / 2
+    if np.random.uniform() < pr_b:
+        offspring1 = father[:halfway] + mother[halfway:]
+        offspring2 = mother[:halfway] + father[halfway:]
+
+    # Repair:
+    offspring_list = [offspring1, offspring2]
+    for offspring in offspring_list:
+        while len(np.unique(offspring)) != len(offspring):
+            repeated = [item for item, count in Counter(offspring).iteritems() if count > 1]
+            for repeated_value in repeated:
+                random_repeated_index = random.choice(np.where(offspring == repeated_value)[0])
+                for i in range(N):
+                    if not i in offspring:
+                        offspring[random_repeated_index] = i
+        # Mutate:
+        if np.random.uniform() < pr_m:
+            random_element = random.choice(offspring)
+            random_substitute = random.choice(offspring)
+            while random_element == random_substitute:
+                random_substitute = random.choice(offspring)
+            random_element_index = np.where(offspring == random_element)[0]
+            random_substitute_index = np.where(offspring == random_substitute)[0]
+            offspring[random_element_index] = random_substitute
+            offspring[random_substitute_index] = random_element
+
+
+    # Replace:
+    
+
+
+
+
 
 def run_permutation_evolution():
     ## Create initial population
@@ -24,7 +107,7 @@ def run_permutation_evolution():
         population.append(individual)
 
     for gen in range(generations):
-        total_population_data = run_one_generation_matrix(population)
+        total_population_data = run_one_generation_permutation(population)
         best_configuration = total_population_data[0][0]
         conflicts = total_population_data[0][1]
         if conflicts == 0:
