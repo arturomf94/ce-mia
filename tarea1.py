@@ -7,8 +7,8 @@ from collections import Counter
 ### Permutation Solution
 
 ## Parameters:
-runs = 30
-generations = 100
+runs = 1
+generations = 10000
 P = 100 # Population size
 N = 8 # Number of queens
 S = 5 # Number of randomly selected ind. for selection.
@@ -21,23 +21,43 @@ def convert(individual):
     matrix = np.array([0] * N * N)
     matrix = matrix.reshape((N, N))
     for i in range(len(individual)):
-        matrix[i][individual[i]] = 1
+        matrix[individual[i]][i] = 1
     return matrix
 
 def evaluate(individual):
     conflicts = 0
     for i in range(N):
+        row_conflicts = np.count_nonzero(individual[i])
+        conflicts = conflicts + row_conflicts * (row_conflicts - 1) // 2
+    for j in range(N):
+        col_conflicts = np.count_nonzero(individual[:,i])
+        conflicts = conflicts + col_conflicts * (col_conflicts - 1) // 2
+    diagonal_conflicts = 0
+    for i in range(N):
         for j in range(N):
             if individual[i][j] == 1:
-                for p in range(N):
-                    for q in range(N):
-                        if (i != p or j != q) \
-                            and ((i + q == p + j) \
-                                or (i + j == p + q) \
-                                or (i == p) or (j == q)):
-                            if individual[p][q] == 1:
-                                conflicts += 1
-    return conflicts // 2
+                k = 1
+                while i + k < N and j + k < N:
+                    if individual[i][j] == individual[i + k][j + k]:
+                        diagonal_conflicts += 1
+                    k += 1
+                k = 1
+                while i - k >= 0 and j - k >= 0:
+                    if individual[i][j] == individual[i - k][j - k]:
+                        diagonal_conflicts += 1
+                    k += 1
+                k = 1
+                while i - k >= 0 and j + k < N:
+                    if individual[i][j] == individual[i - k][j + k]:
+                        diagonal_conflicts += 1
+                    k += 1
+                k = 1
+                while i + k < N and j - k >= 0:
+                    if individual[i][j] == individual[i + k][j - k]:
+                        diagonal_conflicts += 1
+                    k += 1
+    conflicts = conflicts + diagonal_conflicts // 2
+    return conflicts
 
 def sort_attacks(val):
     return val[1]
@@ -92,15 +112,16 @@ def run_one_generation_permutation(population):
         matrix = convert(offspring)
         offspring_conflicts.append(evaluate(matrix))
 
-
     # Replace:
     # Evaluate offspring:
-
-    population = population + offspring
-    conflicts = conflicts + offspring_conflicts
+    population = np.concatenate((population, offspring_list))
+    conflicts = np.concatenate((conflicts, offspring_conflicts))
     evaluated_population = list(zip(population, conflicts))
     evaluated_population.sort(key = sort_attacks)
     evaluated_population = evaluated_population[:P]
+
+    population = evaluated_population[0]
+
 
     # Report final results:
     total_population_data = evaluated_population
@@ -120,6 +141,7 @@ def run_permutation_evolution():
 
     for gen in range(generations):
         total_population_data = run_one_generation_permutation(population)
+        population = list(list(zip(*total_population_data))[0])
         best_configuration = total_population_data[0][0]
         conflicts = total_population_data[0][1]
         if conflicts == 0:
@@ -137,9 +159,9 @@ import pdb;pdb.set_trace()
 ### Matrix Solution
 
 ## Parameters:
-runs = 30
-generations = 1000
-P = 30 # Population size
+runs = 5
+generations = 500
+P = 6 # Population size
 N = 8 # Number of queens
 S = .4 # Proportion of population that is selected each generation
 pr_b = 1 # Breeding probability
@@ -149,17 +171,37 @@ pr_m = 1 # Mutation probability
 def evaluate(individual):
     conflicts = 0
     for i in range(N):
+        row_conflicts = np.count_nonzero(individual[i])
+        conflicts = conflicts + row_conflicts * (row_conflicts - 1) // 2
+    for j in range(N):
+        col_conflicts = np.count_nonzero(individual[:,i])
+        conflicts = conflicts + col_conflicts * (col_conflicts - 1) // 2
+    diagonal_conflicts = 0
+    for i in range(N):
         for j in range(N):
             if individual[i][j] == 1:
-                for p in range(N):
-                    for q in range(N):
-                        if (i != p or j != q) \
-                            and ((i + q == p + j) \
-                                or (i + j == p + q) \
-                                or (i == p) or (j == q)):
-                            if individual[p][q] == 1:
-                                conflicts += 1
-    return conflicts // 2
+                k = 1
+                while i + k < N and j + k < N:
+                    if individual[i][j] == individual[i + k][j + k]:
+                        diagonal_conflicts += 1
+                    k += 1
+                k = 1
+                while i - k >= 0 and j - k >= 0:
+                    if individual[i][j] == individual[i - k][j - k]:
+                        diagonal_conflicts += 1
+                    k += 1
+                k = 1
+                while i - k >= 0 and j + k < N:
+                    if individual[i][j] == individual[i - k][j + k]:
+                        diagonal_conflicts += 1
+                    k += 1
+                k = 1
+                while i + k < N and j - k >= 0:
+                    if individual[i][j] == individual[i + k][j - k]:
+                        diagonal_conflicts += 1
+                    k += 1
+    conflicts = conflicts + diagonal_conflicts // 2
+    return conflicts
 
 def breed(individual1, individual2):
     if np.random.uniform() < pr_b:
@@ -276,6 +318,7 @@ def run_matrix_evolution():
 
     for gen in range(generations):
         total_population_data = run_one_generation_matrix(population)
+        population = list(list(zip(*total_population_data))[0])
         best_configuration = total_population_data[0][0]
         conflicts = total_population_data[0][1]
         if conflicts == 0:
