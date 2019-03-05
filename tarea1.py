@@ -8,7 +8,7 @@ from collections import Counter
 
 ## Parameters:
 runs = 30
-generations = 10000
+generations = 100
 P = 100 # Population size
 N = 8 # Number of queens
 S = 5 # Number of randomly selected ind. for selection.
@@ -19,7 +19,7 @@ pr_m = .8 # Mutation probability
 
 def convert(individual):
     matrix = np.array([0] * N * N)
-    matrix.reshape((N, N))
+    matrix = matrix.reshape((N, N))
     for i in range(len(individual)):
         matrix[i][individual[i]] = 1
     return matrix
@@ -39,8 +39,8 @@ def evaluate(individual):
                                 conflicts += 1
     return conflicts // 2
 
-    def sort_attacks(val):
-        return val[1]
+def sort_attacks(val):
+    return val[1]
 
 def run_one_generation_permutation(population):
     # Evaluate
@@ -54,7 +54,7 @@ def run_one_generation_permutation(population):
 
     # Select S random:
     random_selection = []
-    while len(random_selection) < S
+    while len(random_selection) < S:
         random_selection.append(random.choice(evaluated_population))
 
     # Sort and get best two:
@@ -62,16 +62,17 @@ def run_one_generation_permutation(population):
     father = random_selection[0][0]
     mother = random_selection[1][0]
 
-    halfway = N / 2
+    halfway = N // 2
     if np.random.uniform() < pr_b:
-        offspring1 = father[:halfway] + mother[halfway:]
-        offspring2 = mother[:halfway] + father[halfway:]
+        offspring1 = np.concatenate((father[:halfway], mother[halfway:]))
+        offspring2 = np.concatenate((mother[:halfway], father[halfway:]))
 
     # Repair:
     offspring_list = [offspring1, offspring2]
+    offspring_conflicts = []
     for offspring in offspring_list:
         while len(np.unique(offspring)) != len(offspring):
-            repeated = [item for item, count in Counter(offspring).iteritems() if count > 1]
+            repeated = [item for item, count in Counter(offspring).items() if count > 1]
             for repeated_value in repeated:
                 random_repeated_index = random.choice(np.where(offspring == repeated_value)[0])
                 for i in range(N):
@@ -87,13 +88,24 @@ def run_one_generation_permutation(population):
             random_substitute_index = np.where(offspring == random_substitute)[0]
             offspring[random_element_index] = random_substitute
             offspring[random_substitute_index] = random_element
+        # Evaluate
+        matrix = convert(offspring)
+        offspring_conflicts.append(evaluate(matrix))
 
 
     # Replace:
-    
+    # Evaluate offspring:
 
+    population = population + offspring
+    conflicts = conflicts + offspring_conflicts
+    evaluated_population = list(zip(population, conflicts))
+    evaluated_population.sort(key = sort_attacks)
+    evaluated_population = evaluated_population[:P]
 
+    # Report final results:
+    total_population_data = evaluated_population
 
+    return total_population_data
 
 
 def run_permutation_evolution():
@@ -113,6 +125,14 @@ def run_permutation_evolution():
         if conflicts == 0:
             break
     return gen, best_configuration, conflicts
+
+total_report = []
+for run in range(runs):
+    gen, best_configuration, conflicts = run_permutation_evolution()
+    total_report.append((gen, best_configuration, conflicts))
+
+
+import pdb;pdb.set_trace()
 
 ### Matrix Solution
 
