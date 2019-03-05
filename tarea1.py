@@ -3,11 +3,13 @@ import numpy as np
 import random
 import math
 from collections import Counter
+import statistics
+import matplotlib.pyplot as plt
 
 ### Permutation Solution
 
 ## Parameters:
-runs = 1
+runs = 30
 generations = 10000
 P = 100 # Population size
 N = 8 # Number of queens
@@ -61,6 +63,12 @@ def evaluate(individual):
 
 def sort_attacks(val):
     return val[1]
+
+def sort_gens(val):
+    return val[0]
+
+def sort_final_attacks(val):
+    return val[2]
 
 def run_one_generation_permutation(population):
     # Evaluate
@@ -138,30 +146,68 @@ def run_permutation_evolution():
         np.random.shuffle(array_seed)
         individual = np.copy(array_seed)
         population.append(individual)
-
+    permutation_run_data = []
     for gen in range(generations):
         total_population_data = run_one_generation_permutation(population)
         population = list(list(zip(*total_population_data))[0])
         best_configuration = total_population_data[0][0]
         conflicts = total_population_data[0][1]
+        permutation_run_data.append((gen, total_population_data[0][1]))
         if conflicts == 0:
             break
-    return gen, best_configuration, conflicts
+    return gen, best_configuration, conflicts, permutation_run_data
 
-total_report = []
+total_report_permutations = []
+total_run_data_permutations = []
 for run in range(runs):
-    gen, best_configuration, conflicts = run_permutation_evolution()
-    total_report.append((gen, best_configuration, conflicts))
+    gen, best_configuration, conflicts, permutation_run_data = run_permutation_evolution()
+    total_report_permutations.append((gen, best_configuration, conflicts))
+    total_run_data_permutations.append(permutation_run_data)
 
 
-import pdb;pdb.set_trace()
+# Separate successful and unsuccessful runs
+successful_permutation_runs = []
+unsuccessful_permutation_runs = []
+successful_permutation_convergence = []
+unsuccessful_permutation_convergence = []
+for id, run in enumerate(total_report_permutations):
+  if run[2] == 0:
+    successful_permutation_runs.append(run)
+    successful_permutation_convergence.append(total_run_data_permutations[id])
+  else:
+    unsuccessful_permutation_runs.append(run)
+    unsuccessful_permutation_convergence.append(total_run_data_permutations[id])
+
+# Get median run for successful experiments:
+gen_list = list(list(zip(*successful_permutation_runs))[0])
+gen_list_copy = gen_list
+gen_list.sort()
+halfway = len(gen_list) // 2
+median_gen = gen_list[halfway]
+median_index = 0
+for i in range(len(successful_permutation_runs)):
+  if successful_permutation_runs[i][0] == median_gen:
+    median_index = i
+median_convergence = successful_permutation_convergence[median_index]
+generations = list(list(zip(*median_convergence))[0])
+conflicts = list(list(zip(*median_convergence))[1])
+
+plt.plot(generations, conflicts)
+plt.title('Convergencia con permutaciones')
+plt.xlabel('Generaciones')
+plt.ylabel('Ataques')
+
+best = min(gen_list)
+mean = np.average(gen_list)
+std_dev = np.std(gen_list)
+worst = max(gen_list)
 
 ### Matrix Solution
 
 ## Parameters:
-runs = 5
-generations = 500
-P = 6 # Population size
+runs = 30
+generations = 10000
+P = 30 # Population size
 N = 8 # Number of queens
 S = .4 # Proportion of population that is selected each generation
 pr_b = 1 # Breeding probability
@@ -315,20 +361,60 @@ def run_matrix_evolution():
         np.random.shuffle(array_seed)
         individual = np.copy(array_seed.reshape((N, N)))
         population.append(individual)
-
+    matrix_run_data = []
     for gen in range(generations):
         total_population_data = run_one_generation_matrix(population)
         population = list(list(zip(*total_population_data))[0])
         best_configuration = total_population_data[0][0]
         conflicts = total_population_data[0][1]
+        matrix_run_data.append((gen, total_population_data[0][1]))
         if conflicts == 0:
             break
-    return gen, best_configuration, conflicts
+    return gen, best_configuration, conflicts, matrix_run_data
 
 
-total_report = []
+total_report_matrix = []
+total_run_data_matrix = []
 for run in range(runs):
-    gen, best_configuration, conflicts = run_matrix_evolution()
-    total_report.append((gen, best_configuration, conflicts))
+    gen, best_configuration, conflicts, matrix_run_data = run_matrix_evolution()
+    total_report_matrix.append((gen, best_configuration, conflicts))
+    total_run_data_matrix.append(matrix_run_data)
 
-import pdb;pdb.set_trace()
+# Separate successful and unsuccessful runs
+successful_matrix_runs = []
+unsuccessful_matrix_runs = []
+successful_matrix_convergence = []
+unsuccessful_matrix_convergence = []
+for id, run in enumerate(total_report_matrix):
+  if run[2] == 0:
+    successful_matrix_runs.append(run)
+    successful_matrix_convergence.append(total_run_data_matrix[id])
+  else:
+    unsuccessful_matrix_runs.append(run)
+    unsuccessful_matrix_convergence.append(total_run_data_matrix[id])
+
+# Get median run for successful experiments:
+gen_list = list(list(zip(*successful_matrix_runs))[0])
+gen_list_copy = gen_list
+gen_list.sort()
+halfway = len(gen_list) // 2
+median_gen = gen_list[halfway]
+median_index = 0
+for i in range(len(successful_matrix_runs)):
+  if successful_matrix_runs[i][0] == median_gen:
+    median_index = i
+median_convergence = successful_matrix_convergence[median_index]
+generations = list(list(zip(*median_convergence))[0])
+conflicts = list(list(zip(*median_convergence))[1])
+
+plt.plot(generations, conflicts)
+plt.title('Convergencia con matrices')
+plt.xlabel('Generaciones')
+plt.ylabel('Ataques')
+
+# Get other statistics:
+
+best = min(gen_list)
+mean = np.average(gen_list)
+std_dev = np.std(gen_list)
+worst = max(gen_list)
